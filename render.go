@@ -4,6 +4,7 @@ import (
 	"bytes"
 	. "github.com/sunfmin/mango"
 	"html/template"
+	"log"
 )
 
 const (
@@ -45,7 +46,12 @@ func MakeRenderer(tpl *template.Template) Middleware {
 
 		data := templateData(env)
 		b := bytes.NewBuffer([]byte{})
-		tpl.ExecuteTemplate(b, name, data)
+		err := tpl.ExecuteTemplate(b, name, data)
+		if err != nil {
+			log.Printf("Execution %s failed: %s", name, err)
+		}
+
+		log.Printf("Rendered %s", name)
 		return status, headers, Body(b.String())
 	}
 }
