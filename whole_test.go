@@ -1,7 +1,7 @@
 package mangotemplate
 
 import (
-	. "github.com/sunfmin/mango"
+	. "github.com/paulbellamy/mango"
 	"html/template"
 	"io/ioutil"
 	"net/http"

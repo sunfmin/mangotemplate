@@ -2,7 +2,7 @@ package mangotemplate
 
 import (
 	"bytes"
-	. "github.com/sunfmin/mango"
+	. "github.com/paulbellamy/mango"
 	"html/template"
 )
 
