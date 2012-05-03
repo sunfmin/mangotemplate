@@ -4,6 +4,7 @@ import (
 	"bytes"
 	. "github.com/paulbellamy/mango"
 	"html/template"
+	"log"
 )
 
 type wrapperData struct {
@@ -28,7 +29,10 @@ func MakeLayout(tpl *template.Template, name string, ldp LayoutDataProvider) Mid
 		}
 
 		b := bytes.NewBuffer([]byte{})
-		tpl.ExecuteTemplate(b, name, &wrapperData{ldp.LayoutData(env), template.HTML(body)})
+		err := tpl.ExecuteTemplate(b, name, &wrapperData{ldp.LayoutData(env), template.HTML(body)})
+		if err != nil {
+			log.Printf("mangotemplate: layout %s failed, %s", name, err)
+		}
 		return status, headers, Body(b.String())
 	}
 }

@@ -48,7 +48,7 @@ func MakeRenderer(tpl *template.Template) Middleware {
 		b := bytes.NewBuffer([]byte{})
 		err := tpl.ExecuteTemplate(b, name, data)
 		if err != nil {
-			log.Printf("Execution %s failed: %s", name, err)
+			log.Printf("mangotemplate: render %s failed, %s", name, err)
 		}
 
 		log.Printf("Rendered %s", name)
