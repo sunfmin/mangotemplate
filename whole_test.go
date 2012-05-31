@@ -11,7 +11,8 @@ import (
 )
 
 func home(env Env) (status Status, headers Headers, body Body) {
-	ForRender(env, "home/index", []string{"11111", "22222", "33333"})
+	r := RenderToString("home/index", []string{"44444", "55555"})
+	ForRender(env, "home/index", []string{"11111", "22222", "33333", r})
 	return 200, Headers{}, Body("")
 }
 
@@ -57,6 +58,9 @@ func TestLayout(t *testing.T) {
 	if !strings.Contains(body, "<li>22222</li>") {
 		t.Errorf("%+v should contain \"11111\"", body)
 
+	}
+	if !strings.Contains(body, "44444") {
+		t.Errorf("%+v should contain \"44444\"", body)
 	}
 
 }

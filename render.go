@@ -22,12 +22,31 @@ func templateData(env Env) (r interface{}) {
 	return
 }
 
+var RenderToStringTemplate *template.Template
+
+func RenderToString(name string, data interface{}) (r string) {
+	if RenderToStringTemplate == nil {
+		panic("you must use mangotemplate.RenderToStringTemplate = tpl to set the template.")
+	}
+	b := bytes.NewBuffer([]byte{})
+	err := RenderToStringTemplate.ExecuteTemplate(b, name, data)
+	if err != nil {
+		log.Printf("mangotemplate: RenderToString %s failed, %s", name, err)
+		return
+	}
+	r = b.String()
+	return
+}
+
 func ForRender(env Env, name string, data interface{}) {
 	env[TEMPLATE_NAME_KEY] = name
 	env[TEMPLATE_DATA_KEY] = data
 }
 
 func MakeRenderer(tpl *template.Template) Middleware {
+	if RenderToStringTemplate == nil {
+		RenderToStringTemplate = tpl
+	}
 	return func(env Env, app App) (status Status, headers Headers, body Body) {
 		status, headers, body = app(env)
 
@@ -49,6 +68,8 @@ func MakeRenderer(tpl *template.Template) Middleware {
 		err := tpl.ExecuteTemplate(b, name, data)
 		if err != nil {
 			log.Printf("mangotemplate: render %s failed, %s", name, err)
+			status = 500
+			return
 		}
 
 		log.Printf("Rendered %s", name)
