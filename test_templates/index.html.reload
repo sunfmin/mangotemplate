@@ -1,8 +1,13 @@
 {{define "index"}}
   reload index
+
+  {{ template "header" }}
+
   {{ template "inline/partial" }}
   {{ template "inline/partial" }}
   {{template "index/partial"}}
+
+  {{ template "footer" }}
 {{end}}
 
 {{define "inline/partial"}}

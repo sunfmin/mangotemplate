@@ -80,9 +80,12 @@ func TestAutoReload(t *testing.T) {
 
 	body := get("/home")
 
-	assert.Contain("reload index", body)
-	assert.Contain("index partial", body)
-	assert.Contain("inline partial", body)
-	assert.Contain("menu", body)
-	assert.Contain("reload layout", body)
+	assert.Contain("reload index", body)  // Body should be changed when template files were changed
+	assert.Contain("reload layout", body) // Body should be changed when template files were changed
+
+	assert.Contain("index partial", body)  // Make sure partials rendered inside template will work.
+	assert.Contain("inline partial", body) // Make sure inline partials will work.
+	assert.Contain("menu", body)           // Read partial without trailing "_"
+	assert.Contain("footer", body)         // Read partial from layout folder
+	assert.Contain("header", body)         // Read partial from layout folder
 }
