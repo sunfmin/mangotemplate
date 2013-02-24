@@ -21,29 +21,27 @@ func Render(preloadedTpl *template.Template, wr io.Writer, name string, data int
 		return
 	}
 
-	tpl := template.New(name)
-
 	templatesToBeParsed := []string{name}
 	for len(templatesToBeParsed) != 0 {
-		content := readTemplate(templatesToBeParsed[0])
+		name := templatesToBeParsed[0]
 		templatesToBeParsed = templatesToBeParsed[1:]
-		check(err)
 
-		_, err = tpl.Parse(content)
-		check(err)
-
-		for _, matched := range templateKeyword.FindAllStringSubmatch(content, -1) {
-			partialName := matched[1]
-			partialParsed := false
-			for _, t := range tpl.Templates() {
-				if t.Name() == partialName {
-					partialParsed = true
-					break
-				}
+		parsed := false
+		for _, t := range tpl.Templates() {
+			if tpl.Name() != name && t.Name() == name {
+				parsed = true
+				break
 			}
+		}
 
-			if !partialParsed {
-				templatesToBeParsed = append(templatesToBeParsed, partialName)
+		if !parsed {
+
+			content := readTemplate(name)
+			_, err = tpl.Parse(content)
+			check(err)
+
+			for _, matched := range templateKeyword.FindAllStringSubmatch(content, -1) {
+				templatesToBeParsed = append(templatesToBeParsed, matched[1])
 			}
 		}
 	}
