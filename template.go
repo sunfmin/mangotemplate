@@ -13,7 +13,13 @@ var (
 	TemplatePath    = "templates/"
 	TemplateSuffix  = ".html"
 	templateKeyword = regexp.MustCompile(`\{\{\ *template\ +\"(.*)\".*}\}`)
+	templateFuncMap = map[*template.Template]template.FuncMap{}
 )
+
+func Funcs(tpl *template.Template, funcmap template.FuncMap) {
+	tpl.Funcs(funcmap)
+	templateFuncMap[tpl] = funcmap
+}
 
 func Render(preloadedTpl *template.Template, wr io.Writer, name string, data interface{}) (err error) {
 	if !AutoReload {
@@ -21,7 +27,26 @@ func Render(preloadedTpl *template.Template, wr io.Writer, name string, data int
 		return
 	}
 
-	templatesToBeParsed := []string{name}
+	tpl := template.New(name)
+	addFunc(tpl, preloadedTpl)
+	parseTemplates(tpl)
+
+	err = tpl.Execute(wr, data)
+	check(err)
+
+	return
+}
+
+func addFunc(tpl *template.Template, preloadedTpl *template.Template) {
+	funcmap, ok := templateFuncMap[preloadedTpl]
+	if ok {
+		tpl.Funcs(funcmap)
+	}
+}
+
+func parseTemplates(tpl *template.Template) {
+	templatesToBeParsed := []string{tpl.Name()}
+
 	for len(templatesToBeParsed) != 0 {
 		name := templatesToBeParsed[0]
 		templatesToBeParsed = templatesToBeParsed[1:]
@@ -35,9 +60,8 @@ func Render(preloadedTpl *template.Template, wr io.Writer, name string, data int
 		}
 
 		if !parsed {
-
 			content := readTemplate(name)
-			_, err = tpl.Parse(content)
+			_, err := tpl.Parse(content)
 			check(err)
 
 			for _, matched := range templateKeyword.FindAllStringSubmatch(content, -1) {
@@ -45,11 +69,6 @@ func Render(preloadedTpl *template.Template, wr io.Writer, name string, data int
 			}
 		}
 	}
-
-	err = tpl.Execute(wr, data)
-	check(err)
-
-	return
 }
 
 func check(err error) {
