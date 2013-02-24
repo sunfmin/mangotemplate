@@ -69,6 +69,7 @@ func TestAutoReload(t *testing.T) {
 	assert.NotContain("reload index", preBody)
 
 	exec.Command("cp", "test_templates/index.html.reload", "test_templates/index.html").Run()
+	exec.Command("cp", "test_templates/layout.html.reload", "test_templates/layout.html").Run()
 	defer exec.Command("git", "checkout", "test_templates").Run()
 
 	AutoReload = true
@@ -82,4 +83,6 @@ func TestAutoReload(t *testing.T) {
 	assert.Contain("reload index", body)
 	assert.Contain("index partial", body)
 	assert.Contain("inline partial", body)
+	assert.Contain("menu", body)
+	assert.Contain("reload layout", body)
 }
