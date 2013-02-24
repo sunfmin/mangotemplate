@@ -12,7 +12,7 @@ var (
 	AutoReload      = false
 	TemplatePath    = "templates/"
 	TemplateSuffix  = ".html"
-	templateKeyword = regexp.MustCompile(`\{\{\ *template\ +\"(.*)\"\ *\}\}`)
+	templateKeyword = regexp.MustCompile(`\{\{\ *template\ +\"(.*)\".*}\}`)
 )
 
 func Render(preloadedTpl *template.Template, wr io.Writer, name string, data interface{}) (err error) {
