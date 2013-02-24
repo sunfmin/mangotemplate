@@ -2,11 +2,11 @@ package mangotemplate
 
 import (
 	. "github.com/paulbellamy/mango"
+	"github.com/shaoshing/gotest"
 	"html/template"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
 
@@ -41,26 +41,21 @@ func mux() *http.ServeMux {
 	return mux
 }
 
-func TestLayout(t *testing.T) {
-	ts := httptest.NewServer(mux())
-	defer ts.Close()
+var ts = httptest.NewServer(mux())
 
-	res, _ := http.Get(ts.URL + "/home")
+func get(url string) string {
 
+	res, _ := http.Get(ts.URL + url)
 	b, _ := ioutil.ReadAll(res.Body)
 
-	body := string(b)
+	return string(b)
+}
 
-	if !strings.Contains(body, "sunfmin") {
-		t.Errorf("%+v should contain \"sunfmin\"", body)
+func TestLayout(t *testing.T) {
+	body := get("/home")
+	assert.Test = t
 
-	}
-	if !strings.Contains(body, "<li>22222</li>") {
-		t.Errorf("%+v should contain \"11111\"", body)
-
-	}
-	if !strings.Contains(body, "44444") {
-		t.Errorf("%+v should contain \"44444\"", body)
-	}
-
+	assert.Contain("sunfmin", body)
+	assert.Contain("<li>22222</li>", body)
+	assert.Contain("44444", body)
 }
