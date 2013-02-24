@@ -7,12 +7,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"testing"
 )
 
 func home(env Env) (status Status, headers Headers, body Body) {
-	r := RenderToString("home/index", []string{"44444", "55555"})
-	ForRender(env, "home/index", []string{"11111", "22222", "33333", r})
+	r := RenderToString("index", []string{"44444", "55555"})
+	ForRender(env, "index", []string{"11111", "22222", "33333", r})
 	return 200, Headers{}, Body("")
 }
 
@@ -31,7 +32,7 @@ func mux() *http.ServeMux {
 		panic(err)
 	}
 
-	l := MakeLayout(tpl, "mainlayout", &header{"sunfmin"})
+	l := MakeLayout(tpl, "layout", &header{"sunfmin"})
 	rdr := MakeRenderer(tpl)
 
 	s.Middleware(l, rdr)
@@ -52,10 +53,31 @@ func get(url string) string {
 }
 
 func TestLayout(t *testing.T) {
-	body := get("/home")
 	assert.Test = t
+
+	body := get("/home")
 
 	assert.Contain("sunfmin", body)
 	assert.Contain("<li>22222</li>", body)
 	assert.Contain("44444", body)
+}
+
+func TestAutoReload(t *testing.T) {
+	assert.Test = t
+
+	preBody := get("/home")
+
+	exec.Command("cp", "test_templates/index.html.reload", "test_templates/index.html").Run()
+	defer exec.Command("git", "checkout", "test_templates").Run()
+
+	AutoReload = true
+	TemplatePath = "test_templates/"
+	defer func() {
+		AutoReload = false
+	}()
+
+	body := get("/home")
+
+	assert.NotContain("reload index", preBody)
+	assert.Contain("reload index", body)
 }
