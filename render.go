@@ -29,7 +29,7 @@ func RenderToString(name string, data interface{}) (r string) {
 		panic("you must use mangotemplate.RenderToStringTemplate = tpl to set the template.")
 	}
 	b := bytes.NewBuffer([]byte{})
-	err := RenderToStringTemplate.ExecuteTemplate(b, name, data)
+	err := Render(RenderToStringTemplate, b, name, data)
 	if err != nil {
 		log.Printf("mangotemplate: RenderToString %s failed, %s", name, err)
 		return
