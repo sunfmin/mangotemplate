@@ -1,0 +1,4 @@
+{{define "layout"}}
+	reload layout
+	{{.Body}}
+{{end}}

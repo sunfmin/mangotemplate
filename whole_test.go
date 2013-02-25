@@ -2,17 +2,18 @@ package mangotemplate
 
 import (
 	. "github.com/paulbellamy/mango"
+	"github.com/shaoshing/gotest"
 	"html/template"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"os/exec"
 	"testing"
 )
 
 func home(env Env) (status Status, headers Headers, body Body) {
-	r := RenderToString("home/index", []string{"44444", "55555"})
-	ForRender(env, "home/index", []string{"11111", "22222", "33333", r})
+	r := RenderToString("index", []string{"44444", "55555"})
+	ForRender(env, "index", []string{"11111", "22222", "33333", r})
 	return 200, Headers{}, Body("")
 }
 
@@ -31,7 +32,7 @@ func mux() *http.ServeMux {
 		panic(err)
 	}
 
-	l := MakeLayout(tpl, "mainlayout", &header{"sunfmin"})
+	l := MakeLayout(tpl, "layout", &header{"sunfmin"})
 	rdr := MakeRenderer(tpl)
 
 	s.Middleware(l, rdr)
@@ -41,26 +42,50 @@ func mux() *http.ServeMux {
 	return mux
 }
 
-func TestLayout(t *testing.T) {
-	ts := httptest.NewServer(mux())
-	defer ts.Close()
+var ts = httptest.NewServer(mux())
 
-	res, _ := http.Get(ts.URL + "/home")
+func get(url string) string {
 
+	res, _ := http.Get(ts.URL + url)
 	b, _ := ioutil.ReadAll(res.Body)
 
-	body := string(b)
+	return string(b)
+}
 
-	if !strings.Contains(body, "sunfmin") {
-		t.Errorf("%+v should contain \"sunfmin\"", body)
+func TestLayout(t *testing.T) {
+	assert.Test = t
 
-	}
-	if !strings.Contains(body, "<li>22222</li>") {
-		t.Errorf("%+v should contain \"11111\"", body)
+	body := get("/home")
 
-	}
-	if !strings.Contains(body, "44444") {
-		t.Errorf("%+v should contain \"44444\"", body)
-	}
+	assert.Contain("sunfmin", body)
+	assert.Contain("<li>22222</li>", body)
+	assert.Contain("44444", body)
+}
 
+func TestAutoReload(t *testing.T) {
+	assert.Test = t
+
+	preBody := get("/home")
+	assert.NotContain("reload index", preBody)
+
+	exec.Command("cp", "test_templates/index.html.reload", "test_templates/index.html").Run()
+	exec.Command("cp", "test_templates/layout.html.reload", "test_templates/layout.html").Run()
+	defer exec.Command("git", "checkout", "test_templates").Run()
+
+	AutoReload = true
+	TemplatePath = "test_templates/"
+	defer func() {
+		AutoReload = false
+	}()
+
+	body := get("/home")
+
+	assert.Contain("reload index", body)  // Body should be changed when template files were changed
+	assert.Contain("reload layout", body) // Body should be changed when template files were changed
+
+	assert.Contain("index partial", body)  // Make sure partials rendered inside template will work.
+	assert.Contain("inline partial", body) // Make sure inline partials will work.
+	assert.Contain("menu", body)           // Read partial without trailing "_"
+	assert.Contain("footer", body)         // Read partial from layout folder
+	assert.Contain("header", body)         // Read partial from layout folder
 }

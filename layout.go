@@ -29,7 +29,7 @@ func MakeLayout(tpl *template.Template, name string, ldp LayoutDataProvider) Mid
 		}
 
 		b := bytes.NewBuffer([]byte{})
-		err := tpl.ExecuteTemplate(b, name, &wrapperData{ldp.LayoutData(env), template.HTML(body)})
+		err := Render(tpl, b, name, &wrapperData{ldp.LayoutData(env), template.HTML(body)})
 		if err != nil {
 			log.Printf("mangotemplate: layout %s failed, %s", name, err)
 		}
