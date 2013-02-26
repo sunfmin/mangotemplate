@@ -19,6 +19,11 @@ func home(env Env) (status Status, headers Headers, body Body) {
 	return 200, Headers{}, Body("")
 }
 
+func notification(env Env) (status Status, headers Headers, body Body) {
+	ForRender(env, "notification", nil)
+	return 200, Headers{}, Body("")
+}
+
 type header struct {
 	Username string
 }
@@ -43,6 +48,7 @@ func mux() *http.ServeMux {
 
 	mux := http.DefaultServeMux
 	mux.HandleFunc("/home", s.HandlerFunc(home))
+	mux.HandleFunc("/notification", s.HandlerFunc(notification))
 	return mux
 }
 
@@ -90,6 +96,11 @@ func TestAutoReload(t *testing.T) {
 	assert.Contain("menu", body)           // Read partial without trailing "_"
 	assert.Contain("footer", body)         // Read partial from layout folder
 	assert.Contain("header", body)         // Read partial from layout folder
+
+	// If fail to reload template, it should render using the preloaded template instead.
+	body = get("/notification")
+	assert.Contain("notification 1", body)
+	assert.Contain("notification 2", body)
 }
 
 func bash(bash string) string {
