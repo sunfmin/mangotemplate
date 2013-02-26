@@ -1,6 +1,7 @@
 package mangotemplate
 
 import (
+	"bytes"
 	. "github.com/paulbellamy/mango"
 	"github.com/shaoshing/gotest"
 	"html/template"
@@ -8,12 +9,18 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
 func home(env Env) (status Status, headers Headers, body Body) {
 	r := RenderToString("index", []string{"44444", "55555"})
 	ForRender(env, "index", []string{"11111", "22222", "33333", r})
+	return 200, Headers{}, Body("")
+}
+
+func notification(env Env) (status Status, headers Headers, body Body) {
+	ForRender(env, "notification", nil)
 	return 200, Headers{}, Body("")
 }
 
@@ -26,6 +33,8 @@ func (h *header) LayoutData(env Env) interface{} {
 }
 
 func mux() *http.ServeMux {
+	TemplatePath = "test_templates/"
+
 	s := new(Stack)
 	tpl, err := template.ParseGlob("test_templates/*.html")
 	if err != nil {
@@ -39,13 +48,13 @@ func mux() *http.ServeMux {
 
 	mux := http.DefaultServeMux
 	mux.HandleFunc("/home", s.HandlerFunc(home))
+	mux.HandleFunc("/notification", s.HandlerFunc(notification))
 	return mux
 }
 
 var ts = httptest.NewServer(mux())
 
 func get(url string) string {
-
 	res, _ := http.Get(ts.URL + url)
 	b, _ := ioutil.ReadAll(res.Body)
 
@@ -68,12 +77,11 @@ func TestAutoReload(t *testing.T) {
 	preBody := get("/home")
 	assert.NotContain("reload index", preBody)
 
-	exec.Command("cp", "test_templates/index.html.reload", "test_templates/index.html").Run()
-	exec.Command("cp", "test_templates/layout.html.reload", "test_templates/layout.html").Run()
-	defer exec.Command("git", "checkout", "test_templates").Run()
+	bash("cp test_templates/index.html /tmp/mangotemplate.index.html && cp test_templates/layout.html /tmp/mangotemplate.layout.html ")
+	bash("cp test_templates/index.html.reload test_templates/index.html && cp test_templates/layout.html.reload test_templates/layout.html")
+	defer bash("cp /tmp/mangotemplate.index.html test_templates/index.html && cp /tmp/mangotemplate.layout.html test_templates/layout.html")
 
 	AutoReload = true
-	TemplatePath = "test_templates/"
 	defer func() {
 		AutoReload = false
 	}()
@@ -88,4 +96,20 @@ func TestAutoReload(t *testing.T) {
 	assert.Contain("menu", body)           // Read partial without trailing "_"
 	assert.Contain("footer", body)         // Read partial from layout folder
 	assert.Contain("header", body)         // Read partial from layout folder
+
+	// If fail to reload template, it should render using the preloaded template instead.
+	body = get("/notification")
+	assert.Contain("notification 1", body)
+	assert.Contain("notification 2", body)
+}
+
+func bash(bash string) string {
+	var b bytes.Buffer
+	cmd := exec.Command("sh", "-c", bash)
+	cmd.Stdout = &b
+	err := cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+	return strings.TrimRight(b.String(), "\n")
 }

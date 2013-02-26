@@ -1,6 +1,8 @@
 package mangotemplate
 
 import (
+	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -12,7 +14,7 @@ var (
 	AutoReload      = false
 	TemplatePath    = "templates/"
 	TemplateSuffix  = ".html"
-	templateKeyword = regexp.MustCompile(`\{\{\ *template\ +\"(.*)\".*}\}`)
+	templateKeyword = regexp.MustCompile(`\{\{\ *template\ +\"([^\}]*)\"[^\}]*\}\}`)
 	templateFuncMap = map[*template.Template]template.FuncMap{}
 )
 
@@ -29,7 +31,13 @@ func Render(preloadedTpl *template.Template, wr io.Writer, name string, data int
 
 	tpl := template.New(name)
 	addFunc(tpl, preloadedTpl)
-	parseTemplates(tpl)
+	err = parseTemplates(tpl)
+	if err != nil {
+		fmt.Println("== mangotemplate: Could not reload template, will use preloaded template instead.")
+		fmt.Println(err.Error())
+		err = preloadedTpl.ExecuteTemplate(wr, name, data)
+		return
+	}
 
 	err = tpl.Execute(wr, data)
 	check(err)
@@ -44,7 +52,7 @@ func addFunc(tpl *template.Template, preloadedTpl *template.Template) {
 	}
 }
 
-func parseTemplates(tpl *template.Template) {
+func parseTemplates(tpl *template.Template) (err error) {
 	templatesToBeParsed := []string{tpl.Name()}
 
 	for len(templatesToBeParsed) != 0 {
@@ -60,8 +68,11 @@ func parseTemplates(tpl *template.Template) {
 		}
 
 		if !parsed {
-			content := readTemplate(name)
-			_, err := tpl.Parse(content)
+			content, err := readTemplate(name)
+			if err != nil {
+				return err
+			}
+			_, err = tpl.Parse(content)
 			check(err)
 
 			for _, matched := range templateKeyword.FindAllStringSubmatch(content, -1) {
@@ -69,6 +80,8 @@ func parseTemplates(tpl *template.Template) {
 			}
 		}
 	}
+
+	return
 }
 
 func check(err error) {
@@ -77,16 +90,19 @@ func check(err error) {
 	}
 }
 
-func readTemplate(name string) string {
+func readTemplate(name string) (result string, err error) {
 	paths := templatePaths(name)
 	for _, path := range paths {
-		content, err := ioutil.ReadFile(path)
+		var content []byte
+		content, err = ioutil.ReadFile(path)
 		if err == nil {
-			return string(content)
+			result = string(content)
+			return
 		}
 	}
-	panic("Could not find template [" + name + "] from: " + strings.Join(paths, ", "))
-	return ""
+
+	err = errors.New("Could not find template [" + name + "] from: " + strings.Join(paths, ", "))
+	return
 }
 
 // Example
