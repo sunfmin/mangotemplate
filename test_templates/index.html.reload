@@ -1,15 +1,11 @@
 {{define "index"}}
   reload index
 
-  {{ template "header" }}
+  {{ template "header" }} {{ template "footer" }}
 
-  {{ template "inline/partial" }}
-  {{ template "inline/partial" }}
+  {{ template "inline/partial" }} {{ template "inline/partial" }}
 
-  {{template "index/partial"}}
-  {{template "index/partial"}}
-
-  {{ template "footer" }}
+  {{template "index/partial"}} {{template "index/partial"}}
 {{end}}
 
 {{define "inline/partial"}}

@@ -12,7 +12,7 @@ var (
 	AutoReload      = false
 	TemplatePath    = "templates/"
 	TemplateSuffix  = ".html"
-	templateKeyword = regexp.MustCompile(`\{\{\ *template\ +\"(.*)\".*}\}`)
+	templateKeyword = regexp.MustCompile(`\{\{\ *template\ +\"([^\}]*)\"[^\}]*\}\}`)
 	templateFuncMap = map[*template.Template]template.FuncMap{}
 )
 
