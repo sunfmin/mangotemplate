@@ -39,8 +39,9 @@ func Render(preloadedTpl *template.Template, wr io.Writer, name string, data int
 		return
 	}
 
-	err = tpl.Execute(wr, data)
-	check(err)
+	if err = tpl.Execute(wr, data); err != nil {
+		panic(err)
+	}
 
 	return
 }
@@ -72,8 +73,12 @@ func parseTemplates(tpl *template.Template) (err error) {
 			if err != nil {
 				return err
 			}
-			_, err = tpl.Parse(content)
-			check(err)
+			if _, err = tpl.Parse(content); err != nil {
+				if strings.Contains(err.Error(), "redefinition of template") {
+					fmt.Printf("\n\n (A redefinition error raised while parsing [%s]. Did you happen to put the HTML comments outside the {{define}} block?)\n", name)
+				}
+				panic(err)
+			}
 
 			for _, matched := range templateKeyword.FindAllStringSubmatch(content, -1) {
 				templatesToBeParsed = append(templatesToBeParsed, matched[1])
@@ -82,12 +87,6 @@ func parseTemplates(tpl *template.Template) (err error) {
 	}
 
 	return
-}
-
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
 
 func readTemplate(name string) (result string, err error) {
