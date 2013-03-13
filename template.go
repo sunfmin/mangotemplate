@@ -1,11 +1,11 @@
 package mangotemplate
 
 import (
-	"errors"
 	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -16,11 +16,41 @@ var (
 	TemplateSuffix  = ".html"
 	templateKeyword = regexp.MustCompile(`\{\{\ *template\ +\"([^\}]*)\"[^\}]*\}\}`)
 	templateFuncMap = map[*template.Template]template.FuncMap{}
+	// Mapping for the template name and its corresponding file path. Checkout the ParseGlob for how it works.
+	templateMapPaths = map[string]string{}
 )
 
 func Funcs(tpl *template.Template, funcmap template.FuncMap) {
 	tpl.Funcs(funcmap)
 	templateFuncMap[tpl] = funcmap
+}
+
+// Pase files match the [pattern] and store file path of each template name in templateMapPaths
+func ParseGlob(templates *template.Template, pattern string) (*template.Template, error) {
+	filePaths, err := filepath.Glob(pattern)
+	if err != nil {
+		return templates, err
+	}
+
+	if len(filePaths) == 0 {
+		return templates, fmt.Errorf("mangotemplate.ParseGlob: pattern matches no files: %#q", pattern)
+	}
+
+	for _, path := range filePaths {
+		_, err := templates.ParseFiles(path)
+		if err != nil {
+			return templates, err
+		}
+
+		for _, parsedTemplate := range templates.Templates() {
+			if _, ok := templateMapPaths[parsedTemplate.Name()]; ok {
+				continue
+			}
+			templateMapPaths[parsedTemplate.Name()] = path
+		}
+	}
+
+	return templates, nil
 }
 
 func Render(preloadedTpl *template.Template, wr io.Writer, name string, data interface{}) (err error) {
@@ -33,10 +63,7 @@ func Render(preloadedTpl *template.Template, wr io.Writer, name string, data int
 	addFunc(tpl, preloadedTpl)
 	err = parseTemplates(tpl)
 	if err != nil {
-		fmt.Println("== mangotemplate: Could not reload template, will use preloaded template instead.")
-		fmt.Println(err.Error())
-		err = preloadedTpl.ExecuteTemplate(wr, name, data)
-		return
+		return fmt.Errorf("\n\n\n==== Could not reload templates:\n%s\n\n\n", err.Error())
 	}
 
 	if err = tpl.Execute(wr, data); err != nil {
@@ -75,9 +102,9 @@ func parseTemplates(tpl *template.Template) (err error) {
 			}
 			if _, err = tpl.Parse(content); err != nil {
 				if strings.Contains(err.Error(), "redefinition of template") {
-					fmt.Printf("\n\n (A redefinition error raised while parsing [%s]. Did you happen to put the HTML comments outside the {{define}} block?)\n", name)
+					return fmt.Errorf("A redefinition error raised while parsing [%s]. Did you happen to put the HTML comments outside the {{define}} block?)", name)
 				}
-				panic(err)
+				return err
 			}
 
 			for _, matched := range templateKeyword.FindAllStringSubmatch(content, -1) {
@@ -90,35 +117,17 @@ func parseTemplates(tpl *template.Template) (err error) {
 }
 
 func readTemplate(name string) (result string, err error) {
-	paths := templatePaths(name)
-	for _, path := range paths {
-		var content []byte
-		content, err = ioutil.ReadFile(path)
-		if err == nil {
-			result = string(content)
-			return
-		}
+	path, found := templateMapPaths[name]
+	if !found {
+		return "", fmt.Errorf("Unable to locate path of template [%s].", name)
 	}
 
-	err = errors.New("Could not find template [" + name + "] from: " + strings.Join(paths, ", "))
+	var content []byte
+	content, err = ioutil.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("Uable to read template content from [%s].", path)
+	}
+
+	result = string(content)
 	return
-}
-
-// Example
-// input: index/menu
-// output:
-//    [templates/index/menu.html,
-//		 templates/index/_menu.html,
-//		 templates/layout/index/menu.html,
-//		 templates/layout/index/_menu.html]
-func templatePaths(name string) []string {
-	names := strings.Split(name, "/")
-	partialName := strings.Join(names[:len(names)-1], "/") + "/_" + names[len(names)-1]
-
-	return []string{
-		TemplatePath + name + TemplateSuffix,
-		TemplatePath + partialName + TemplateSuffix,
-		TemplatePath + "layout/" + name + TemplateSuffix,
-		TemplatePath + "layout/" + partialName + TemplateSuffix,
-	}
 }

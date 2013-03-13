@@ -36,7 +36,12 @@ func mux() *http.ServeMux {
 	TemplatePath = "test_templates/"
 
 	s := new(Stack)
-	tpl, err := template.ParseGlob("test_templates/*.html")
+	tpl := template.New("")
+	_, err := ParseGlob(tpl, "test_templates/*.html")
+	if err != nil {
+		panic(err)
+	}
+	_, err = ParseGlob(tpl, "test_templates/*/*.html")
 	if err != nil {
 		panic(err)
 	}
@@ -76,10 +81,12 @@ func TestAutoReload(t *testing.T) {
 
 	preBody := get("/home")
 	assert.NotContain("reload index", preBody)
+	preBody = get("/notification")
+	assert.NotContain("reload notification 1", preBody)
 
-	bash("cp test_templates/index.html /tmp/mangotemplate.index.html && cp test_templates/layout.html /tmp/mangotemplate.layout.html ")
-	bash("cp test_templates/index.html.reload test_templates/index.html && cp test_templates/layout.html.reload test_templates/layout.html")
-	defer bash("cp /tmp/mangotemplate.index.html test_templates/index.html && cp /tmp/mangotemplate.layout.html test_templates/layout.html")
+	bash("cp test_templates/index.html /tmp/mangotemplate.index.html && cp test_templates/layout.html /tmp/mangotemplate.layout.html && cp test_templates/tips.html /tmp/mangotemplate.tips.html")
+	bash("cp test_templates/index.html.reload test_templates/index.html && cp test_templates/layout.html.reload test_templates/layout.html && cp test_templates/tips.html.reload test_templates/tips.html")
+	defer bash("cp /tmp/mangotemplate.index.html test_templates/index.html && cp /tmp/mangotemplate.layout.html test_templates/layout.html && cp /tmp/mangotemplate.tips.html test_templates/tips.html")
 
 	AutoReload = true
 	defer func() {
@@ -97,10 +104,9 @@ func TestAutoReload(t *testing.T) {
 	assert.Contain("footer", body)         // Read partial from layout folder
 	assert.Contain("header", body)         // Read partial from layout folder
 
-	// If fail to reload template, it should render using the preloaded template instead.
 	body = get("/notification")
-	assert.Contain("notification 1", body)
-	assert.Contain("notification 2", body)
+	assert.Contain("reload notification 1", body)
+	assert.Contain("reload notification 2", body)
 }
 
 func bash(bash string) string {
