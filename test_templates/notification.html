@@ -1,4 +1,11 @@
 
+// Test
 {{define "notification"}}
-  {{ template "tips/notification1" }} {{ template "tips/notification2" }}
+  {{ template "tips/notification1" }} {{ template "tips/notification2" }} {{ template "notification/inline" }}
+{{end}}
+
+
+// Test 2
+{{define "notification/inline"}}
+  inline notification
 {{end}}

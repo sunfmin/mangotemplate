@@ -63,7 +63,7 @@ func Render(preloadedTpl *template.Template, wr io.Writer, name string, data int
 	addFunc(tpl, preloadedTpl)
 	err = parseTemplates(tpl)
 	if err != nil {
-		return fmt.Errorf("\n\n\n==== Could not reload templates:\n%s\n\n\n", err.Error())
+		return fmt.Errorf("\n==== Could not reload templates:\n%s\n\n\n", err.Error())
 	}
 
 	if err = tpl.Execute(wr, data); err != nil {
@@ -96,11 +96,12 @@ func parseTemplates(tpl *template.Template) (err error) {
 		}
 
 		if !parsed {
-			content, err := readTemplate(name)
+			content, path, err := readTemplate(name)
 			if err != nil {
 				return err
 			}
-			if _, err = tpl.Parse(content); err != nil {
+
+			if _, err = tpl.New(path).Parse(content); err != nil {
 				if strings.Contains(err.Error(), "redefinition of template") {
 					return fmt.Errorf("A redefinition error raised while parsing [%s]. Did you happen to put the HTML comments outside the {{define}} block?)", name)
 				}
@@ -116,16 +117,19 @@ func parseTemplates(tpl *template.Template) (err error) {
 	return
 }
 
-func readTemplate(name string) (result string, err error) {
-	path, found := templateMapPaths[name]
+func readTemplate(name string) (result string, path string, err error) {
+	var found bool
+	path, found = templateMapPaths[name]
 	if !found {
-		return "", fmt.Errorf("Unable to locate path of template [%s].", name)
+		err = fmt.Errorf("Unable to locate path of template [%s].", name)
+		return
 	}
 
 	var content []byte
 	content, err = ioutil.ReadFile(path)
 	if err != nil {
-		return "", fmt.Errorf("Uable to read template content from [%s].", path)
+		err = fmt.Errorf("Uable to read template content from [%s].", path)
+		return
 	}
 
 	result = string(content)

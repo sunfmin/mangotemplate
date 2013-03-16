@@ -105,6 +105,7 @@ func TestAutoReload(t *testing.T) {
 	assert.Contain("header", body)         // Read partial from layout folder
 
 	body = get("/notification")
+	assert.Contain("inline notification", body)
 	assert.Contain("reload notification 1", body)
 	assert.Contain("reload notification 2", body)
 }
