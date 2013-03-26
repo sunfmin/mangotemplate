@@ -17,6 +17,8 @@ type LayoutDataProvider interface {
 }
 
 func MakeLayout(tpl *template.Template, name string, ldp LayoutDataProvider) Middleware {
+	defaultTemplate := tpl
+
 	return func(env Env, app App) (status Status, headers Headers, body Body) {
 		status, headers, body = app(env)
 
@@ -28,6 +30,7 @@ func MakeLayout(tpl *template.Template, name string, ldp LayoutDataProvider) Mid
 			return
 		}
 
+		tpl := getTemplateFromEnv(env, defaultTemplate)
 		b := bytes.NewBuffer([]byte{})
 		err := Render(tpl, b, name, &wrapperData{ldp.LayoutData(env), template.HTML(body)})
 		if err != nil {

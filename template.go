@@ -2,6 +2,7 @@ package mangotemplate
 
 import (
 	"fmt"
+	"github.com/paulbellamy/mango"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -9,6 +10,8 @@ import (
 	"regexp"
 	"strings"
 )
+
+const EnvTemplateName = "MANGOTEMPLATE_TEMPLATE"
 
 var (
 	AutoReload      = false
@@ -133,5 +136,13 @@ func readTemplate(name string) (result string, path string, err error) {
 	}
 
 	result = string(content)
+	return
+}
+
+func getTemplateFromEnv(env mango.Env, defaultTemplate *template.Template) (tpl *template.Template) {
+	tpl = defaultTemplate
+	if _, ok := env[EnvTemplateName]; ok {
+		tpl = env[EnvTemplateName].(*template.Template)
+	}
 	return
 }

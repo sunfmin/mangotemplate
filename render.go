@@ -47,6 +47,9 @@ func MakeRenderer(tpl *template.Template) Middleware {
 	if RenderToStringTemplate == nil {
 		RenderToStringTemplate = tpl
 	}
+
+	defaultTemplate := tpl
+
 	return func(env Env, app App) (status Status, headers Headers, body Body) {
 		status, headers, body = app(env)
 
@@ -64,6 +67,7 @@ func MakeRenderer(tpl *template.Template) Middleware {
 		}
 
 		data := templateData(env)
+		tpl := getTemplateFromEnv(env, defaultTemplate)
 		b := bytes.NewBuffer([]byte{})
 		err := Render(tpl, b, name, data)
 		if err != nil {
