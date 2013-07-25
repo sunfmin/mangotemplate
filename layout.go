@@ -44,6 +44,6 @@ func MakeLayout(tpl *template.Template, name string, ldp LayoutDataProvider) Mid
 		if err != nil {
 			log.Printf("mangotemplate: layout %s failed, %s", name, err)
 		}
-		return status, headers, Body(b.String())
+		return status, headers, Body(strings.TrimSpace(b.String()))
 	}
 }
