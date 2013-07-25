@@ -5,6 +5,7 @@ import (
 	. "github.com/paulbellamy/mango"
 	"html/template"
 	"log"
+	"strings"
 )
 
 type wrapperData struct {
@@ -32,6 +33,13 @@ func MakeLayout(tpl *template.Template, name string, ldp LayoutDataProvider) Mid
 
 		tpl := getTemplateFromEnv(env, defaultTemplate)
 		b := bytes.NewBuffer([]byte{})
+
+		if IsFromMobile(env.Request().UserAgent()) && !strings.HasPrefix(name, "mobiles_layout/") {
+			if name != "main" {
+				name = "home"
+			}
+			name = "mobiles_layout/" + name
+		}
 		err := Render(tpl, b, name, &wrapperData{ldp.LayoutData(env), template.HTML(body)})
 		if err != nil {
 			log.Printf("mangotemplate: layout %s failed, %s", name, err)

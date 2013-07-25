@@ -5,12 +5,25 @@ import (
 	. "github.com/paulbellamy/mango"
 	"html/template"
 	"log"
+	"strings"
 )
 
 const (
 	TEMPLATE_NAME_KEY = "mangotemplate.name"
 	TEMPLATE_DATA_KEY = "mangotemplate.data"
 )
+
+var MOBILE_KEYS = []string{"Android", "iPhone", "iPod", "Windows Phone"}
+
+func IsFromMobile(userAgent string) bool {
+
+	for _, key := range MOBILE_KEYS {
+		if strings.Contains(userAgent, key) {
+			return true
+		}
+	}
+	return false
+}
 
 func templateName(env Env) (name string) {
 	name, _ = env[TEMPLATE_NAME_KEY].(string)
@@ -43,6 +56,10 @@ func RenderToStringT(name string, tpl *template.Template, data interface{}) (r s
 }
 
 func ForRender(env Env, name string, data interface{}) {
+	if IsFromMobile(env.Request().UserAgent()) && !strings.HasPrefix(name, "mobiles_layout/") {
+		arr := strings.Split(name, "/")
+		name = "mobiles_layout/" + arr[len(arr)-1]
+	}
 	env[TEMPLATE_NAME_KEY] = name
 	env[TEMPLATE_DATA_KEY] = data
 }
