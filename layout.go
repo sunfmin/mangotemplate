@@ -33,17 +33,19 @@ func MakeLayout(tpl *template.Template, name string, ldp LayoutDataProvider) Mid
 
 		tpl := getTemplateFromEnv(env, defaultTemplate)
 		b := bytes.NewBuffer([]byte{})
-
+		originName := name
 		if IsFromMobile(env.Request().UserAgent()) && !strings.HasPrefix(name, "mobiles_layout/") {
 			if name != "main" {
 				name = "home"
 			}
 			name = "mobiles_layout/" + name
+
 		}
 		err := Render(tpl, b, name, &wrapperData{ldp.LayoutData(env), template.HTML(body)})
 		if err != nil {
 			log.Printf("mangotemplate: layout %s failed, %s", name, err)
 		}
+		name = originName
 		return status, headers, Body(strings.TrimSpace(b.String()))
 	}
 }
